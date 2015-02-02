@@ -194,13 +194,8 @@ HANDLE WINAPI LoadRemoteLibraryR(
 	LPVOID lpUserdata, 
 	DWORD nUserdataLen )
 {
-	BOOL bSuccess                             = FALSE;
-	LPVOID lpRemoteLibraryBuffer              = NULL;
-	LPTHREAD_START_ROUTINE lpReflectiveLoader = NULL;
-	HANDLE hThread                            = NULL;
-	DWORD dwReflectiveLoaderOffset            = 0;
-	DWORD dwThreadId                          = 0;
-	DWORD i = 0;
+	HANDLE hThread		= NULL;
+	DWORD dwThreadId	= 0;
 
 	__try
 	{
@@ -210,7 +205,7 @@ HANDLE WINAPI LoadRemoteLibraryR(
 				break;
 
 			// check if the library has a ReflectiveLoader...
-			dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpBuffer);
+			DWORD dwReflectiveLoaderOffset = GetReflectiveLoaderOffset(lpBuffer);
 			if (!dwReflectiveLoaderOffset)
 				break;
 
@@ -219,7 +214,7 @@ HANDLE WINAPI LoadRemoteLibraryR(
 				+ 64; // shellcode buffer
 
 			// alloc memory (RWX) in the host process for the image...
-			lpRemoteLibraryBuffer = VirtualAllocEx(hProcess, NULL, nBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+			LPVOID lpRemoteLibraryBuffer = VirtualAllocEx(hProcess, NULL, nBufferSize, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 			if (!lpRemoteLibraryBuffer)
 				break;
 			printf("Allocated memory address in remote process: 0x%p\n", lpRemoteLibraryBuffer);
@@ -230,6 +225,7 @@ HANDLE WINAPI LoadRemoteLibraryR(
 
 			ULONG_PTR uiReflectiveLoaderAddr = (ULONG_PTR)lpRemoteLibraryBuffer + dwReflectiveLoaderOffset;
 
+			// write our userdata blob into the host process
 			ULONG_PTR userdataAddr = (ULONG_PTR)lpRemoteLibraryBuffer + dwLength;
 			if (!WriteProcessMemory(hProcess, (LPVOID)userdataAddr, lpUserdata, nUserdataLen, NULL))
 				break;
@@ -244,6 +240,7 @@ HANDLE WINAPI LoadRemoteLibraryR(
 				break;
 
 			BYTE bootstrap[64] = { 0 };
+			DWORD i = 0;
 			/*
 			Shellcode pseudo-code:
 			DWORD r = ReflectiveLoader(lpParameter, lpLibraryAddress, dwFunctionHash, lpUserData, nUserdataLen);
@@ -356,6 +353,7 @@ HANDLE WINAPI LoadRemoteLibraryR(
 #error Architecture not supported!
 #endif
 
+			// finally, write our shellcode into the host process
 			if (!WriteProcessMemory(hProcess, (LPVOID)uiShellcodeAddr, bootstrap, i, NULL))
 				break;
 
