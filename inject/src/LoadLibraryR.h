@@ -1,5 +1,6 @@
-//===============================================================================================//
 // Copyright (c) 2015, Dan Staples
+
+//===============================================================================================//
 // Copyright (c) 2012, Stephen Fewer of Harmony Security (www.harmonysecurity.com)
 // All rights reserved.
 // 
@@ -30,6 +31,8 @@
 #define _REFLECTIVEDLLINJECTION_LOADLIBRARYR_H
 //===============================================================================================//
 #include "ReflectiveDLLInjection.h"
+
+#define BREAK_WITH_ERROR( e ) { printf( "[-] %s. Error=%d\n", e, GetLastError() ); break; }
 
 DWORD GetReflectiveLoaderOffset( VOID * lpReflectiveDllBuffer );
 

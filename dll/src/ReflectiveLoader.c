@@ -1,5 +1,6 @@
-//===============================================================================================//
 // Copyright (c) 2015, Dan Staples
+
+//===============================================================================================//
 // Copyright (c) 2012, Stephen Fewer of Harmony Security (www.harmonysecurity.com)
 // All rights reserved.
 // 
@@ -31,23 +32,18 @@
 
 typedef BOOL (*EXPORTFUNC)(LPVOID, DWORD);
 
-DLLEXPORT BOOL
-MyFunction(LPVOID lpUserdata, DWORD nUserdataLen)
-{
-	MessageBoxA(NULL, (LPCSTR)lpUserdata, "Hello from MyFunction!", MB_OK);
-	return TRUE;
-}
-
 // Our loader will set this to a pseudo correct HINSTANCE/HMODULE value
 HINSTANCE hAppInstance = NULL;
 
 // This is our position independent reflective DLL loader/injector
-DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAddress, DWORD dwFunctionHash, LPVOID lpUserData, DWORD nUserdataLen )
+DLLEXPORT VOID WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAddress, DWORD dwFunctionHash, LPVOID lpUserData, DWORD nUserdataLen )
 {
 	// the functions we need
 	LOADLIBRARYA pLoadLibraryA     = NULL;
 	GETPROCADDRESS pGetProcAddress = NULL;
 	VIRTUALALLOC pVirtualAlloc     = NULL;
+	EXITTHREAD pExitThread         = NULL;
+	EXITTHREAD pRtlExitUserThread  = NULL;
 	NTFLUSHINSTRUCTIONCACHE pNtFlushInstructionCache = NULL;
 
 	USHORT usCounter;
@@ -63,6 +59,7 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 	ULONG_PTR uiExportDir;
 	ULONG_PTR uiNameOrdinals;
 	DWORD dwHashValue;
+	DWORD dwNumberOfNames;
 
 	// variables for loading this image
 	ULONG_PTR uiHeaderValue;
@@ -71,6 +68,9 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 	ULONG_PTR uiValueC;
 	ULONG_PTR uiValueD;
 	ULONG_PTR uiValueE;
+
+	// exit code for current thread
+	DWORD dwExitCode = 1;
 
 	uiLibraryAddress = (ULONG_PTR)lpLibraryAddress;
 
@@ -134,7 +134,7 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 			// get the VA for the array of name ordinals
 			uiNameOrdinals = ( uiBaseAddress + ((PIMAGE_EXPORT_DIRECTORY )uiExportDir)->AddressOfNameOrdinals );
 
-			usCounter = 3;
+			usCounter = 4;
 
 			// loop while we still have imports to find
 			while( usCounter > 0 )
@@ -143,7 +143,7 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 				dwHashValue = hash( (char *)( uiBaseAddress + DEREF_32( uiNameArray ) )  );
 				
 				// if we have found a function we want we get its virtual address
-				if( dwHashValue == LOADLIBRARYA_HASH || dwHashValue == GETPROCADDRESS_HASH || dwHashValue == VIRTUALALLOC_HASH )
+				if( dwHashValue == LOADLIBRARYA_HASH || dwHashValue == GETPROCADDRESS_HASH || dwHashValue == VIRTUALALLOC_HASH || dwHashValue == EXITTHREAD_HSAH )
 				{
 					// get the VA for the array of addresses
 					uiAddressArray = ( uiBaseAddress + ((PIMAGE_EXPORT_DIRECTORY )uiExportDir)->AddressOfFunctions );
@@ -158,6 +158,8 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 						pGetProcAddress = (GETPROCADDRESS)( uiBaseAddress + DEREF_32( uiAddressArray ) );
 					else if( dwHashValue == VIRTUALALLOC_HASH )
 						pVirtualAlloc = (VIRTUALALLOC)( uiBaseAddress + DEREF_32( uiAddressArray ) );
+					else if (dwHashValue == EXITTHREAD_HSAH)
+						pExitThread = (EXITTHREAD)(uiBaseAddress + DEREF_32(uiAddressArray));
 			
 					// decrement our counter
 					usCounter--;
@@ -190,16 +192,19 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 			// get the VA for the array of name ordinals
 			uiNameOrdinals = ( uiBaseAddress + ((PIMAGE_EXPORT_DIRECTORY )uiExportDir)->AddressOfNameOrdinals );
 
-			usCounter = 1;
+			// get total number of named exports
+			dwNumberOfNames = ((PIMAGE_EXPORT_DIRECTORY )uiExportDir)->NumberOfNames;
+
+			usCounter = 2;
 
 			// loop while we still have imports to find
-			while( usCounter > 0 )
+			while( usCounter > 0 && dwNumberOfNames > 0 )
 			{
 				// compute the hash values for this function name
 				dwHashValue = hash( (char *)( uiBaseAddress + DEREF_32( uiNameArray ) )  );
 				
 				// if we have found a function we want we get its virtual address
-				if( dwHashValue == NTFLUSHINSTRUCTIONCACHE_HASH )
+				if( dwHashValue == NTFLUSHINSTRUCTIONCACHE_HASH || dwHashValue == RTLEXITUSERTHREAD_HASH )
 				{
 					// get the VA for the array of addresses
 					uiAddressArray = ( uiBaseAddress + ((PIMAGE_EXPORT_DIRECTORY )uiExportDir)->AddressOfFunctions );
@@ -210,6 +215,8 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 					// store this functions VA
 					if( dwHashValue == NTFLUSHINSTRUCTIONCACHE_HASH )
 						pNtFlushInstructionCache = (NTFLUSHINSTRUCTIONCACHE)( uiBaseAddress + DEREF_32( uiAddressArray ) );
+					else if (dwHashValue == RTLEXITUSERTHREAD_HASH)
+						pRtlExitUserThread = (EXITTHREAD)(uiBaseAddress + DEREF_32(uiAddressArray));
 
 					// decrement our counter
 					usCounter--;
@@ -220,11 +227,14 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 
 				// get the next exported function name ordinal
 				uiNameOrdinals += sizeof(WORD);
+
+				// decrement our # of names counter
+				dwNumberOfNames--;
 			}
 		}
 
 		// we stop searching when we have found everything we need.
-		if( pLoadLibraryA && pGetProcAddress && pVirtualAlloc && pNtFlushInstructionCache )
+		if( pLoadLibraryA && pGetProcAddress && pVirtualAlloc && pExitThread && pNtFlushInstructionCache )
 			break;
 
 		// get the next entry
@@ -431,31 +441,40 @@ DLLEXPORT DWORD WINAPI ReflectiveLoader( LPVOID lpParameter, LPVOID lpLibraryAdd
 	// if we are injecting a DLL via LoadRemoteLibraryR we call DllMain and pass in our parameter (via the DllMain lpReserved parameter)
 	((DLLMAIN)uiValueA)( (HINSTANCE)uiBaseAddress, DLL_PROCESS_ATTACH, lpParameter );
 
-	PIMAGE_DATA_DIRECTORY directory = &((PIMAGE_NT_HEADERS)uiHeaderValue)->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-	if (directory->Size == 0)
-		return 1;
-
-	PIMAGE_EXPORT_DIRECTORY exports = (PIMAGE_EXPORT_DIRECTORY)(uiBaseAddress + directory->VirtualAddress);
-	if (exports->NumberOfNames == 0 || exports->NumberOfFunctions == 0)
-		return 1;
-
-	// search function name in list of exported names
-	int idx = -1;
-	DWORD *nameRef = (DWORD *)(uiBaseAddress + exports->AddressOfNames);
-	WORD *ordinal = (WORD *)(uiBaseAddress + exports->AddressOfNameOrdinals);
-	for (DWORD i = 0; i < exports->NumberOfNames; i++, nameRef++, ordinal++) {
-		if (hash((char *)(uiBaseAddress + (*nameRef))) == dwFunctionHash) {
-			idx = *ordinal;
+	do
+	{
+		PIMAGE_DATA_DIRECTORY directory = &((PIMAGE_NT_HEADERS)uiHeaderValue)->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+		if (directory->Size == 0)
 			break;
+
+		PIMAGE_EXPORT_DIRECTORY exports = (PIMAGE_EXPORT_DIRECTORY)(uiBaseAddress + directory->VirtualAddress);
+		if (exports->NumberOfNames == 0 || exports->NumberOfFunctions == 0)
+			break;
+
+		// search function name in list of exported names
+		int idx = -1;
+		DWORD *nameRef = (DWORD *)(uiBaseAddress + exports->AddressOfNames);
+		WORD *ordinal = (WORD *)(uiBaseAddress + exports->AddressOfNameOrdinals);
+		for (DWORD i = 0; i < exports->NumberOfNames; i++, nameRef++, ordinal++) {
+			if (hash((char *)(uiBaseAddress + (*nameRef))) == dwFunctionHash) {
+				idx = *ordinal;
+				break;
+			}
 		}
-	}
-	if (idx == -1)
-		return 1;
+		if (idx == -1)
+			break;
 
-	// AddressOfFunctions contains the RVAs to the "real" functions
-	EXPORTFUNC f = (EXPORTFUNC)(uiBaseAddress + (*(DWORD *)(uiBaseAddress + exports->AddressOfFunctions + (idx * 4))));
-	if (!f(lpUserData, nUserdataLen))
-		return 1;
+		// AddressOfFunctions contains the RVAs to the "real" functions
+		EXPORTFUNC f = (EXPORTFUNC)(uiBaseAddress + (*(DWORD *)(uiBaseAddress + exports->AddressOfFunctions + (idx * 4))));
+		if (!f(lpUserData, nUserdataLen))
+			break;
 
-	return 0;
+		dwExitCode = 0;
+	} while ( 0 );
+
+	// We're done, exit thread
+	if (pRtlExitUserThread)
+		pRtlExitUserThread(dwExitCode);
+	else
+		pExitThread(dwExitCode);
 }

@@ -1,3 +1,5 @@
+// Copyright (c) 2015, Dan Staples
+
 //===============================================================================================//
 // Copyright (c) 2012, Stephen Fewer of Harmony Security (www.harmonysecurity.com)
 // All rights reserved.
@@ -38,15 +40,19 @@
 typedef HMODULE (WINAPI * LOADLIBRARYA)( LPCSTR );
 typedef FARPROC (WINAPI * GETPROCADDRESS)( HMODULE, LPCSTR );
 typedef LPVOID  (WINAPI * VIRTUALALLOC)( LPVOID, SIZE_T, DWORD, DWORD );
+typedef VOID    (WINAPI * EXITTHREAD)( DWORD );
 typedef DWORD   (NTAPI  * NTFLUSHINSTRUCTIONCACHE)( HANDLE, PVOID, ULONG );
 
+/** NOTE: module hashes are computed using all-caps unicode strings */
 #define KERNEL32DLL_HASH				0x6A4ABC5B
 #define NTDLLDLL_HASH					0x3CFA685D
 
 #define LOADLIBRARYA_HASH				0xEC0E4E8E
 #define GETPROCADDRESS_HASH				0x7C0DFCAA
 #define VIRTUALALLOC_HASH				0x91AFCA54
-#define NTFLUSHINSTRUCTIONCACHE_HASH	0x534C0AB8
+#define EXITTHREAD_HSAH					0x60E0CEEF
+#define NTFLUSHINSTRUCTIONCACHE_HASH			0x534C0AB8
+#define RTLEXITUSERTHREAD_HASH				0xFF7F061A // Vista+
 
 #define IMAGE_REL_BASED_ARM_MOV32A		5
 #define IMAGE_REL_BASED_ARM_MOV32T		7

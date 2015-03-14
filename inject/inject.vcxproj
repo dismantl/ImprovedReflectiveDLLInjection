@@ -45,7 +45,7 @@
   <PropertyGroup Label="General">
     <DebugDefinitions>DEBUG;_DEBUG</DebugDefinitions>
     <X64Definitions>WIN_X64</X64Definitions>
-	<X86Definitions>WIN_X86</X86Definitions>
+    <X86Definitions>WIN_X86</X86Definitions>
     <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
@@ -55,19 +55,19 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-	  <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>$(DebugDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Optimization>Disabled</Optimization>
-	  <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
-	  <Optimization>MaxSpeed</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -83,8 +83,14 @@
       <PreprocessorDefinitions>$(X86Definitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-	  <TargetMachine>MachineX86</TargetMachine>
+      <TargetMachine>MachineX86</TargetMachine>
     </Link>
+    <PostBuildEvent>
+      <Command>IF EXIST "$(SolutionDir)\bin\" GOTO COPY
+    mkdir "$(SolutionDir)\bin\"
+:COPY
+copy /y "$(TargetDir)$(TargetFileName)" "$(SolutionDir)\bin\inject.exe"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
     <Midl>
@@ -92,11 +98,19 @@
     </Midl>
     <ClCompile>
       <PreprocessorDefinitions>$(X64Definitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</BufferSecurityCheck>
+      <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</BufferSecurityCheck>
     </ClCompile>
     <Link>
-	  <TargetMachine>MachineX64</TargetMachine>
+      <TargetMachine>MachineX64</TargetMachine>
     </Link>
+    <PostBuildEvent>
+      <Command>IF EXIST "$(SolutionDir)\bin\" GOTO COPY
+    mkdir "$(SolutionDir)\bin\"
+:COPY
+copy /y "$(TargetDir)$(TargetFileName)" "$(SolutionDir)\bin\inject.x64.exe"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\GetProcAddressR.c" />

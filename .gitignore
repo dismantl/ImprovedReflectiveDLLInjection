@@ -13,7 +13,7 @@ inject/inject.vcxproj.user
 hashcalc/Release/
 hashcalc/Debug/
 hashcalc/hashcalc.vcproj.*.user
-hashcalc/hashcalc.vcxproc.user
+hashcalc/hashcalc.vcxproj.user
 rdi.ncb
 rdi.suo
 rdi.sdf

@@ -1,7 +1,7 @@
+This is an improvement of the [original reflective DLL injection technique by Stephen Fewer of Harmony Security](https://github.com/stephenfewer/ReflectiveDLLInjection). It uses bootstrap shellcode (x86 or x64) to allow calling any export of the DLL from the reflective loader. See [An Improved Reflective DLL Injection Technique](https://disman.tl/2015/01/30/an-improved-reflective-dll-injection-technique.html) for a detailed description.
+
 About
 =====
-
-This is an improvement of the [original reflective DLL injection technique by Stephen Fewer of Harmony Security](https://github.com/stephenfewer/ReflectiveDLLInjection). It uses bootstrap shellcode (x86 or x64) to allow calling any export of the DLL from the reflective loader. See [An Improved Reflective DLL Injection Technique](https://disman.tl/2015/01/30/an-improved-reflective-dll-injection-technique.html) for a detailed description.
 
 Reflective DLL injection is a library injection technique in which the concept of reflective programming is employed to perform the loading of a library from memory into a host process. As such the library is responsible for loading itself by implementing a minimal Portable Executable (PE) file loader. It can then govern, with minimal interaction with the host system and process, how it will load and interact with the host.
 

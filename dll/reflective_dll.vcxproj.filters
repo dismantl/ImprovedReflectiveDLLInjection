@@ -17,6 +17,9 @@
     <ClCompile Include="src\ReflectiveLoader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\MyFunction.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ReflectiveDLLInjection.h">
