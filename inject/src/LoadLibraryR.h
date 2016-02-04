@@ -32,7 +32,9 @@
 //===============================================================================================//
 #include "ReflectiveDLLInjection.h"
 
-#define BREAK_WITH_ERROR( e ) { printf( "[-] %s. Error=%d\n", e, GetLastError() ); break; }
+#define BREAK_WITH_ERROR( e ) { MessageBox(0, e, "Error", 1); ; break; }
+
+//printf( "[-] %s. Error=%d\n", e, GetLastError());
 
 DWORD GetReflectiveLoaderOffset( VOID * lpReflectiveDllBuffer );
 

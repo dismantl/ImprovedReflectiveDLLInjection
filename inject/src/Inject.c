@@ -31,14 +31,16 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <Tlhelp32.h>
 #include "LoadLibraryR.h"
+#include "Inject.h"
 
 #pragma comment(lib,"Advapi32.lib")
 
 #define MYFUNCTION_HASH		0x6654bba6 // hash of "MyFunction"
 
 // Simple app to inject a reflective DLL into a process vis its process ID.
-int main( int argc, char * argv[] )
+int WinMain() //int argc, char * argv[]
 {
 	HANDLE hFile          = NULL;
 	HANDLE hModule        = NULL;
@@ -61,13 +63,15 @@ int main( int argc, char * argv[] )
 	{
 		// Usage: inject.exe [string] [pid] [dll_file]
 
-		if( argc == 2 )
-			dwProcessId = GetCurrentProcessId();
-		else
-			dwProcessId = atoi( argv[2] );
+		//if (argc == 2)
+		//	dwProcessId = GetCurrentProcessId();
+		//else
+		//dwProcessId = atoi( argv[2] );
+		dwProcessId = getPid("ffxiv_dx11.exe");
 
-		if( argc >= 4 )
-			cpDllFile = argv[3];
+		//if( argc >= 4 )
+		//	cpDllFile = argv[3];
+		cpDllFile = "ffxiv-fixfullscreen.dll";
 
 		hFile = CreateFileA( cpDllFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
 		if( hFile == INVALID_HANDLE_VALUE )
@@ -99,18 +103,23 @@ int main( int argc, char * argv[] )
 		if( !hProcess )
 			BREAK_WITH_ERROR( "Failed to open the target process" );
 
-		hModule = LoadRemoteLibraryR( hProcess, lpBuffer, dwLength, NULL, MYFUNCTION_HASH, argv[1], (DWORD)(strlen(argv[1]) + 1));
+		hModule = LoadRemoteLibraryR( hProcess, lpBuffer, dwLength, NULL, MYFUNCTION_HASH, "user data", 1337); // originally (DWORD)(strlen(argv[1]) + 1)
 		if( !hModule )
 			BREAK_WITH_ERROR( "Failed to inject the DLL" );
 
-		printf( "[+] Injected the '%s' DLL into process %d.\n", cpDllFile, dwProcessId );
+		//printf( "[+] Injected the '%s' DLL into process %d.\n", cpDllFile, dwProcessId );
 		
 		WaitForSingleObject( hModule, -1 );
 
 		if ( !GetExitCodeThread( hModule, &dwExitCode ) )
 			BREAK_WITH_ERROR( "Failed to get exit code of thread" );
 
-		printf( "[+] Created thread exited with code %d.\n", dwExitCode );
+		//printf( "[+] Created thread exited with code %d.\n", dwExitCode );
+
+		//char message[260] = "Injection successful. Thread exited with code: ";
+		//char buffer[260];
+		//sprintf(buffer, "%d", dwExitCode);
+		//MessageBox(0, strcat(message, buffer), "Info", 1);
 
 	} while( 0 );
 
@@ -121,4 +130,24 @@ int main( int argc, char * argv[] )
 		CloseHandle( hProcess );
 
 	return dwExitCode;
+}
+
+DWORD getPid(char procName [260])
+{
+	HANDLE hsnap;
+	PROCESSENTRY32 pt;
+	hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	pt.dwSize = sizeof(PROCESSENTRY32);
+	do
+	{
+		if (strcmp(pt.szExeFile,procName)==0)
+		{
+			DWORD pid = pt.th32ProcessID;
+			CloseHandle(hsnap);
+			printf("%d", pid);
+			return pid;
+		}
+	} while (Process32Next(hsnap, &pt));
+	CloseHandle(hsnap);
+	return 0;
 }
