@@ -357,10 +357,10 @@ DWORD inject_via_remotethread_wow64(HANDLE hProcess, LPVOID lpStartAddress, LPVO
 	} while (0);
 
 	if (pExecuteX64)
-		VirtualFree(pExecuteX64, 0, MEM_DECOMMIT);
+		VirtualFree(pExecuteX64, 0, MEM_RELEASE);
 
 	if (pX64function)
-		VirtualFree(pX64function, 0, MEM_DECOMMIT);
+		VirtualFree(pX64function, 0, MEM_RELEASE);
 
 	return dwResult;
 }
