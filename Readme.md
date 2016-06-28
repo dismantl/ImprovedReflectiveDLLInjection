@@ -23,7 +23,7 @@ Assuming we have code execution in the host process and the library we wish to i
 * The ReflectiveLoader will then process the newly loaded copy of its image's relocation table.
 * The ReflectiveLoader will then call its newly loaded image's entry point function, DllMain with DLL_PROCESS_ATTACH. The library has now been successfully loaded into memory.
 * The ReflectiveLoader will then call a chosen exported function, passing a caller-specified pointer and DWORD as parameters.
-* Finally the ReflectiveLoader will return execution to the initial bootstrap shellcode, which will then terminate the thread.
+* Finally the ReflectiveLoader will terminate the thread by calling ExitThread or, if available, RtlExitUserThread.
 
 Build
 =====
