@@ -466,6 +466,10 @@ static DWORD CreateBootstrap(
 			MoveMemory(lpBuffer + i, &nUserdataLen, sizeof(nUserdataLen));
 			i += sizeof(nUserdataLen);
 
+			// sub rsp, 20
+			MoveMemory(lpBuffer + i, "\x48\x83\xec\x20", 4);
+			i += 4;
+
 			// move rax, <address of reflective loader>
 			MoveMemory(lpBuffer + i, "\x48\xc7\xc0", 3);
 			i += 3;
@@ -502,6 +506,10 @@ static DWORD CreateBootstrap(
 			lpBuffer[i++] = 0x68; // PUSH (word/dword)
 			MoveMemory(lpBuffer + i, &nUserdataLen, sizeof(nUserdataLen));
 			i += sizeof(nUserdataLen);
+
+			// sub rsp, 20
+			MoveMemory(lpBuffer + i, "\x48\x83\xec\x20", 4);
+			i += 4;
 
 			// move rax, <address of reflective loader>
 			MoveMemory(lpBuffer + i, "\x48\xb8", 2);
