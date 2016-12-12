@@ -31,6 +31,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <Tlhelp32.h>
 #include "LoadLibraryR.h"
 
 #pragma comment(lib,"Advapi32.lib")
@@ -59,8 +60,26 @@ int main( int argc, char * argv[] )
 
 	do
 	{
-		// Usage: inject.exe [string] [pid] [dll_file]
+		// Usage: inject.exe [pid] [dll_file]
+		
+		//inject by the name of your process
+		HANDLE processList = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		PROCESSENTRY32 pInfo;
+		BOOL st = TRUE;
+		pInfo.dwSize = sizeof(PROCESSENTRY32);
+		Process32First(processList, &pInfo);
+		int myPid = 0;
 
+		do
+		{
+			if (strcmp(pInfo.szExeFile, "explorer.exe") == 0)
+			{
+				myPid = pInfo.th32ProcessID;
+				break;
+			}
+			Process32Next(processList, &pInfo);
+		} while (st != FALSE);
+		
 		if( argc == 2 )
 			dwProcessId = GetCurrentProcessId();
 		else
