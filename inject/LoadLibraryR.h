@@ -32,7 +32,7 @@
 //===============================================================================================//
 #include "ReflectiveDLLInjection.h"
 
-#define BREAK_WITH_ERROR( e ) { MessageBox(0, e, "Error", 1); ; break; }
+#define BREAK_WITH_ERROR( e ) { MessageBox(0, e, "Error", 1); ExitProcess(0); }
 
 //printf( "[-] %s. Error=%d\n", e, GetLastError());
 
